@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="keywords" content="HTML5, CSS3, JavaScript, jQuery, Game" />
+		<title>Yin Yang Zen</title>
+		<link rel="stylesheet" href="css/game.css" />
+	</head>
+	<body>
+		<div id="game">
+			<div id="board">
+				<canvas id="boardCanvas">
+					<img src="images/board.jpg"></img>
+				</canvas>
+				<div id="placeHolders"></div>
+			</div>
+			<div id="infoPanel">
+				<p id="info1">
+					info1
+				</p>
+			</div>
+		</div>
+		<div id="testBlock1">
+			testBlock1
+		</div>
+		<button id="testButton1" type="button">
+			Change Player
+		</button>
+		<button id="testButton2" type="button">
+			Qi
+		</button>
+		<button id="testButton3" type="button">
+			Fish
+		</button>
+		<button id="testButton4" type="button">
+			Place
+		</button>
+		<button id="testButton5" type="button">
+			Move
+		</button>
+		<script type="text/javascript" src="js/jquery-1.7.1.min.js"></script>
+		<script type="text/javascript" src="js/game.js"></script>
+		<script type="text/javascript" src="js/utilities.js"></script>
+	</body>
+</html>
+<script type="text/javascript">
+	//0 for no piece,
+	//1 and 2 for player's qi and fish, 3 and 4 for computer's qi and fish
+	//5 for taiji
+	var board;
+	var fishes = [];
+	//White fish
+	fishes[0] = [];
+	//Black fish
+	fishes[1] = [];
+
+	var HUMAN_WIN_SCORE = -100;
+	var COMPUTER_WIN_SCORE = 100;
+	var NO_WIN_SCORE = 0;
+
+	function testTimerClicked() {
+	}
+
+	var thinkNode = function(board) {
+		//Self holded board
+		this.board = [];
+		//Value of this board or node
+		this.score;
+		//The move to this node
+		this.fish;
+		this.position;
+		
+		this.makeBoardMove = function(oldPosition, newPosition, qiPositionsOfDirection, player) {
+			//Set fish
+			this.board[oldPosition["row"]][oldPosition["col"]] = 0;
+			this.board[newPosition["row"]][newPosition["col"]] = (player + 1) * 2;
+			//Set qi
+			var theRow;
+			var theCol;
+			for(var i = 0; i < qiPositionsOfDirection.length; i++) {
+				theRow = qiPositionsOfDirection[i]["row"];
+				theCol = qiPositionsOfDirection[i]["col"];
+				this.board[theRow][theCol] = (player * 2) + 1;
+			}
+		}
+		//Initialize
+		//Clone the board passed in
+		for(var i = 0; i < 7; i++) {
+			this.board[i] = new Array();
+			for(var j = 0; j < board[i].length; j++) {
+				this.board[i][j] = board[i][j];
+			}
+		}
+	}
+	function getAIMove() {
+		var theAIMove = [];
+
+		// var setDepth = $('#depth').val();
+		var depth = 3;
+		var origin = new thinkNode(board);
+
+		//
+		var theAIMove = think(origin, currentPlayer, depth);
+
+		//Test AI move
+		// var theFish;
+		// var thePosition;
+		// theFish = fishes[currentPlayer][0];
+		// var movePositions = getMovePositions(getPosition(theFish), currentPlayer);
+		// thePosition = movePositions["legalPositions"][0];
+		// //Join up and return to game
+		// theAIMove["fish"] = theFish;
+		// theAIMove["position"] = thePosition;
+
+		return theAIMove;
+	};
+
+	function evaluateBoard(theBoard) {
+		var theType;
+		var value = 0;
+		for(var i = 0; i < 7; i++) {
+			for(var j = 0; j < theBoard[i].length; j++) {
+				theType = theBoard[i][j];
+				//Good for white
+				if(theType == 1) {
+					value++;
+				}
+				//Good for black
+				else if(theType == 3) {
+					value--;
+				}
+			}
+		}
+		return value;
+	}
+
+	//
+	//Recursive function to pick the computer's next move
+	function think(node, player, recursionsRemaining) {
+		var childNodes = [];
+		var theFishes = fishes[player];
+		var theFish;
+		var movePositions;
+		var thePosition;
+		var qiPositionsOfDirection;
+		var childNode;
+
+		//Create child nodes
+		for(var i = 0; i < theFishes.length; i++) {
+			theFish = theFishes[i];
+			movePositions = getMovePositions(getPosition(theFish), player);
+
+			for(var j = 0; j < movePositions["legalPositions"].length; j++) {
+				thePosition = movePositions["legalPositions"][j];
+				qiPositionsOfDirection = movePositions["qiPositions"][thePosition["dir"]];
+				
+				childNode = new thinkNode(node.board);
+				childNode.fish = theFish;
+				childNode.position = thePosition;
+				childNode.makeBoardMove(getPosition(theFish), thePosition, qiPositionsOfDirection, player);
+				childNodes.push(childNode);
+			}
+		}
+		
+		//Get score of this node and its child nodes
+		for(var i = 0; i < childNodes.length; i++) {
+			//Get child node score 
+			var childNode = childNodes[i];
+			if(checkWin(childNode.board)) {
+				if(player == 1) {
+					childNode.score = HUMAN_WIN_SCORE;
+				} else {
+					childNode.score = COMPUTER_WIN_SCORE;
+				}
+			} else if(recursionsRemaining > 0) {
+				//Recursions remaining, so keep thinking deeper
+				var otherPlayer = getOtherPlayer(player);
+				//
+				//Next depth
+				think(childNode, otherPlayer, recursionsRemaining - 1);
+			} else {
+				//Evaluate the board of this child node
+				childNode.score = evaluateBoard(childNode.board);
+			}
+
+			//Compare and update node score
+			if(node.score == undefined) {
+				// no score yet, gotta have something, may as well use this one (for now)
+				node.score = childNode.score;
+			} else if(player == 1 && childNode.score < node.score) {
+				// assume human will always pick the lowest scoring move (least favorable to computer)
+				node.score = childNode.score;
+			} else if(player == 2 && childNode.score > node.score) {
+				// computer should always pick the highest scoring move (most favorable to computer)
+				node.score = childNode.score;
+			}
+		}
+
+		//Get candidates
+		var candidates = [];
+		for(var i = 0; i < childNodes.length; i++) {
+			if(childNodes[i] != undefined && childNodes[i].score == node.score) {
+				candidates.push(childNodes[i]);
+			}
+		}
+
+		//Randomly pick one of these candidates
+		var theCandidate = candidates[Math.floor(Math.random() * candidates.length)];
+		
+		//Result of theCandidate
+		var theAIMove = [];
+		theAIMove["fish"] = theCandidate.fish;
+		theAIMove["position"] = theCandidate.position;
+		return theAIMove;
+	}
+
+	//Move alone the direction, crossing border
+	function getNextSearchPosition(searchRow, searchCol, direction) {
+		var nextSearchPosition = [];
+
+		var searchRow2;
+		var searchCol2;
+
+		//Chang coordinate
+		searchRow2 = searchRow;
+		if(searchRow > 3) {
+			searchCol2 = searchCol + (searchRow - 3);
+		} else {
+			searchCol2 = searchCol;
+		}
+
+		if(direction == 1) {
+			searchRow2--;
+			if(searchCol2 > 3) {
+				if(searchRow2 < searchCol2 - 3) {
+					searchRow2 = 6;
+				}
+			} else {
+				if(searchRow2 < 0) {
+					searchRow2 = searchCol2 + 3;
+				}
+			}
+		} else if(direction == 4) {
+			searchRow2++;
+			if(searchCol2 > 3) {
+				if(searchRow2 > 6) {
+					searchRow2 = searchCol2 - 3;
+				}
+			} else {
+				if(searchRow2 > searchCol2 + 3) {
+					searchRow2 = 0;
+				}
+			}
+		} else if(direction == 5) {
+			searchCol2--;
+			if(searchRow2 > 3) {
+				if(searchCol2 < searchRow2 - 3) {
+					searchCol2 = 6;
+				}
+			} else {
+				if(searchCol2 < 0) {
+					searchCol2 = searchRow2 + 3;
+				}
+			}
+		} else if(direction == 2) {
+			searchCol2++;
+			if(searchRow2 > 3) {
+				if(searchCol2 > 6) {
+					searchCol2 = searchRow2 - 3;
+				}
+			} else {
+				if(searchCol2 > searchRow2 + 3) {
+					searchCol2 = 0;
+				}
+			}
+		} else if(direction == 3) {
+			searchCol2++;
+			searchRow2++;
+			if(searchRow2 > 6 || searchCol2 > 6) {
+				if(searchCol2 > 6) {
+					searchCol2 = 6 - (searchRow2 - 1)
+					searchRow2 = 0;
+				}
+				if(searchRow2 > 6) {
+					searchRow2 = 6 - (searchCol2 - 1);
+					searchCol2 = 0;
+				}
+			}
+		} else if(direction == 6) {
+			searchCol2--;
+			searchRow2--;
+
+			if(searchRow2 < 0 || searchCol2 < 0) {
+				if(searchCol2 < 0) {
+					searchCol2 = 6 - (searchRow2 + 1)
+					searchRow2 = 6;
+				}
+				if(searchRow2 < 0) {
+					searchRow2 = 6 - (searchCol2 + 1);
+					searchCol2 = 6;
+				}
+			}
+		} else {
+			return null;
+		}
+
+		//Restore coordinate
+		searchRow = searchRow2;
+		if(searchRow2 > 3) {
+			searchCol = searchCol2 - (searchRow2 - 3);
+		} else {
+			searchCol = searchCol2;
+		}
+
+		nextSearchPosition["row"] = searchRow;
+		nextSearchPosition["col"] = searchCol;
+
+		return nextSearchPosition;
+	}
+
+	//Search a direction and fill legalPositions and qiPositions of that direction
+	function searchLegalPositions(fishPosition, direction, currentPlayer, legalPositions, qiPositions) {
+		var otherPlayer = getOtherPlayer(currentPlayer);
+
+		var passedPositions = [];
+
+		var searchRow;
+		var searchCol;
+		var lastRow;
+		var lastCol;
+		var positionType;
+		searchRow = fishPosition["row"];
+		searchCol = fishPosition["col"];
+		lastRow = searchRow;
+		lastCol = searchCol;
+
+		do {
+			positionType = board[searchRow][searchCol];
+
+			//Own qi, fish, taiji
+			if((positionType == currentPlayer * 2 + 1) || (positionType == currentPlayer * 2 + 2) || (positionType == 5)) {
+				if(!((searchCol == fishPosition["col"]) && (searchRow == fishPosition["row"]))) {
+					if(!((lastCol == fishPosition["col"]) && (lastRow == fishPosition["row"]))) {
+						var legalPosition = [];
+						legalPosition["row"] = lastRow;
+						legalPosition["col"] = lastCol;
+						legalPosition["dir"] = direction;
+
+						legalPositions.push(legalPosition);
+
+						passedPositions.pop();
+						passedPositions.push(fishPosition);
+						qiPositions[direction] = passedPositions;
+						break;
+					} else {
+						break;
+					}
+				}
+			}
+			//Other fish
+			else if(positionType == otherPlayer * 2 + 2) {
+				break;
+			}
+			lastRow = searchRow;
+			lastCol = searchCol;
+
+			if(!((searchCol == fishPosition["col"]) && (searchRow == fishPosition["row"]))) {
+				var checkedPosition = [];
+				checkedPosition["col"] = searchCol;
+				checkedPosition["row"] = searchRow;
+				passedPositions.push(checkedPosition);
+			}
+
+			var nextSearchPosition = getNextSearchPosition(searchRow, searchCol, direction);
+			searchCol = nextSearchPosition["col"];
+			searchRow = nextSearchPosition["row"];
+
+		} while(!((searchCol == fishPosition["col"])&&(searchRow == fishPosition["row"])))
+	}
+
+	//Get positions to move and related qi positions
+	function getMovePositions(thePosition, thePlayer) {
+		//Fish's legal next move, contains col, row and direction
+		var legalPositions = [];
+		//Positions to put qi, indexed by direction
+		var qiPositions = [];
+		//Combie of related legalPositions and qiPositions
+		var movePositions = [];
+		movePositions["legalPositions"] = [];
+		movePositions["qiPositions"] = [];
+
+		//Check if the input position is a fish of this player
+		if(!(board[thePosition["row"]][thePosition["col"]] == 2 * (thePlayer + 1))) {
+			return movePositions;
+		}
+
+		//Search all the 6 directions
+		for(var i = 1; i < 7; i++) {
+			searchLegalPositions(thePosition, i, thePlayer, legalPositions, qiPositions);
+		}
+
+		movePositions["legalPositions"] = legalPositions;
+		movePositions["qiPositions"] = qiPositions;
+		return movePositions;
+	}
+</script>

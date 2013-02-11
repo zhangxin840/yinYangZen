@@ -1,0 +1,107 @@
+/*Author: Zhang Xin
+ Mail: 116943915@qq.com
+ */
+@media screen {
+	@font-face {
+		font-family: 'Orbitron';
+		font-style: normal;
+		font-weight: 900;
+		src: local('Orbitron-Black'), url('http://themes.googleusercontent.com/static/fonts/orbitron/v3/FyvTORElv6iWeP2Jf9yG3YbN6UDyHWBl620a-IRfuBk.woff') format('woff');
+	}
+}
+@media screen {
+	@font-face {
+		font-family: 'Droid Serif';
+		font-style: normal;
+		font-weight: normal;
+		src: local('Droid Serif'), local('DroidSerif'), url('http://themes.googleusercontent.com/static/fonts/droidserif/v3/0AKsP294HTD-nvJgucYTaIbN6UDyHWBl620a-IRfuBk.woff') format('woff');
+	}
+}
+
+body{
+	font-family: 'Droid Serif', arial, serif;
+}
+
+#game {
+	border-radius: 35px;
+	border: 2px solid #666;
+	position: relative;
+	background: #aaa;
+	width: 550px;
+	height: 570px;
+	margin: 20px auto auto auto;
+	-moz-user-select: -moz-none;
+	-webkit-user-select: none;
+}
+
+#board{
+	position: relative;
+/*	background: url(../images/board.jpg) orange;*/
+	box-shadow: 3px 3px 5px #555;
+	width: 500px;
+	height: 500px;
+	margin: 10px auto auto auto;
+	-moz-user-select: -moz-none;
+	-webkit-user-select: none;
+}
+
+#board #placeHolders{
+	position:absolute;
+	top: 32px;
+	left: 8px;
+	width: 450px;
+	height: 450px;
+}
+
+#board #boardCanvas{
+	position:absolute;
+	top:0;
+	left:0;
+}
+
+#board .positionHolder{
+	position: absolute;
+	opacity: 1;
+	width: 50px;
+	z-index: 10;
+}
+
+#board .positionHolder.legalPosition{
+	border-radius: 25px;
+	box-shadow:inset 0 0 15px #fff;
+}
+
+#board .positionHolder.legalPosition.black{
+	border-radius: 25px;
+	box-shadow:inset 0 0 15px #333;
+}
+
+#board .piece{
+	position: absolute;
+	width: 75px;
+	-moz-transition: all .2s;
+	-webkit-transition: all .2s;
+	z-index: 11;
+}
+
+#board .piece.qi{
+	position: absolute;
+	width: 75px;
+	-moz-transition: all .2s;
+	-webkit-transition: all .2s;
+	z-index: 9;
+}
+
+#testBlock1{
+	position:absolute;
+	top: 0;
+}
+
+footer {
+	font-family: 'Droid Serif', arial, serif;
+	font-size: 18px;
+	text-align: center;
+	padding-top: 50px;
+	-moz-user-select: -moz-none;
+	-webkit-user-select: none;
+}
